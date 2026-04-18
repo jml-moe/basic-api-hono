@@ -93,3 +93,12 @@ GET hanya headers, post put patch delete bisa nerima keduanya
 
 Headers -> metadata bout request, informasi dll., ex: token untuk proteksi
 Body -> pilot, data yang akan diproses dikirim ke server
+
+Common Type of Database
+SQL -> ada schema-nya, tabular, ex: postgresql
+NoSQL -> gaada schema-nya, ex: mongo
+
+ORM - Object 
+semacam abstraksi yg memudahkan engineer untuk menulis bahasa query dengan bahasa yg udh familiar.
+SQL -> SELECT*FROM Users
+ORM -> db.users.getAll()
