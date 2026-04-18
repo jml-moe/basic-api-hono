@@ -1,0 +1,67 @@
+Use NOUNS For RESOURCES, Not VERBS
+/get-products/ -> salah
+
+HTTP Method Properly; 
+2xx -> succes message
+200 -> standard berhasil
+201 -> post method
+
+4xx -> kesalahan dari client
+401 -> unauthorized, ex:/revenues, meskipun user tau tapi gak punya akses
+403 -> forbidden
+404 -> not found, ex:/products/6, padahal hanya ada 5
+
+5xx -> error server
+500 -> generic error, gak boleh dikasi tau user
+nb; jangan taruh status dalam body
+
+Versioning;
+/v1/payments
+    - productId
+    - userId
+    - amount
+/v1/payments
+    - productId
+    - userId
+    - totalAmount -> nanti terjadi break, maka harus pakai versioning
+
+/v2/payments
+    - productId
+    - userId
+    - totalAmount
+
+Use filtering, sorting, pagination;
+/v2/products?maxP=1000000&minP=100000 -> memudahkan user
+
+Be Consistent
+contoh benar;
+/v1/products
+/v1/users
+
+/v1/products []
+/v1/users []
+
+/v1/products {
+    data:[]
+}
+/v1/products {
+    data:[]
+}
+
+contoh salah;
+/v1/products {
+    []
+}
+/v1/users []
+
+Use nested wisely (debatable);
+/v1/products/:id/reviews/:id/authors -> kadang membingungkan
+
+yg lebih sehat;
+/v1/products/:id
+/v1/reviews?productId=<id>
+/v1/authors?reviewId=<id>
+
+PATCH /v1/orders/:id
+POST /v1/orders/:id/cancel -> memberi tahu tim frontend bahwa ada action yang bisa diakses
+POST /v1/orders/:id/proceed 

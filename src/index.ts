@@ -11,10 +11,14 @@ app.get("/products", (c) => {
 
 //dynamice route
 app.get("/products/:id", (c) => {
-  const productId = c.req.param();
+  const productId = c.req.param("id");
   console.log(productId);
 
   return c.json({ product: {} });
+});
+
+app.post("/products", (c) => {
+  return c.json({ message: "Product Created Succesfully!" });
 });
 
 serve(
