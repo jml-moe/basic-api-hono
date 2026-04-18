@@ -1,3 +1,5 @@
+[Day5]
+
 Use NOUNS For RESOURCES, Not VERBS
 /get-products/ -> salah
 
@@ -65,3 +67,29 @@ yg lebih sehat;
 PATCH /v1/orders/:id
 POST /v1/orders/:id/cancel -> memberi tahu tim frontend bahwa ada action yang bisa diakses
 POST /v1/orders/:id/proceed 
+
+[DAY 6]
+
+biasakan buat placeholder sebelum bikin berbagai logika
+  .get("/", (c) => {
+    return c.json([]);
+  })
+  .get("/:id", (c) => {
+    return c.json({});
+  })
+  .post("/", (c) => {
+    return c.json({ message: "" }, 201);
+  })
+  .patch("/:id", (c) => {
+    return c.json({});
+  })
+  .delete("/:id", (c) => {
+    return c.json({ message: "" });
+  });
+
+HTTP request ada 2 bagian;
+Headers n Body, 
+GET hanya headers, post put patch delete bisa nerima keduanya
+
+Headers -> metadata bout request, informasi dll., ex: token untuk proteksi
+Body -> pilot, data yang akan diproses dikirim ke server

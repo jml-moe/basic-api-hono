@@ -1,25 +1,13 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-
-const app = new Hono();
+import { productRouter } from "./modules/products/router.js";
+import { reviewRouter } from "./modules/reviews/router.js";
 
 // app.method(path, handler)
 
-app.get("/products", (c) => {
-  return c.json({ products: [] });
-});
-
-//dynamice route
-app.get("/products/:id", (c) => {
-  const productId = c.req.param("id");
-  console.log(productId);
-
-  return c.json({ product: {} });
-});
-
-app.post("/products", (c) => {
-  return c.json({ message: "Product Created Succesfully!" });
-});
+const app = new Hono()
+  .route("/products", productRouter) // bukan controlller, tapi buat merging route
+  .route("/reviews", reviewRouter);
 
 serve(
   {
