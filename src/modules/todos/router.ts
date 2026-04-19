@@ -1,14 +1,17 @@
 import { Hono } from "hono";
 import { prisma } from "../../utils/prisma.js";
 import { zValidator } from "@hono/zod-validator";
-import { CreateTodoSchema } from "./schema.js";
+import { CreateTodoSchema, UpdateTodoSchema } from "./schema.js";
 
 export const todoRouter = new Hono()
+
+  //REST
   .get("/", async (c) => {
     const todos = await prisma.todo.findMany();
 
     return c.json(todos);
   })
+
   .get("/:id", async (c) => {
     const id = c.req.param("id");
 
@@ -35,4 +38,48 @@ export const todoRouter = new Hono()
     });
 
     return c.json(newTodo, 201);
+  })
+
+  .patch("/:id", zValidator("json", UpdateTodoSchema), async (c) => {
+    const id = c.req.param("id");
+    const body = c.req.valid("json");
+
+    const updatedTodo = await prisma.todo.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        content: body.content,
+      },
+    });
+
+    return c.json(updatedTodo);
+  })
+
+  .delete("/:id", async (c) => {
+    const id = c.req.param("id");
+
+    await prisma.todo.delete({
+      where: {
+        id: Number(id),
+      },
+    });
+
+    return c.json({ message: "Todo is deleted Succesfully!" });
+  })
+
+  // Bisa buat action (always post) -> always VERB
+  .post("/:id/mark-as-done", async (c) => {
+    const id = c.req.param("id");
+
+    const updatedTodo = await prisma.todo.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        isDone: true,
+      },
+    });
+
+    return c.json(updatedTodo);
   });

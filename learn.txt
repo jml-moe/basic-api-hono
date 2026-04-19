@@ -1,104 +1,111 @@
 [Day5]
 
-Use NOUNS For RESOURCES, Not VERBS
-/get-products/ -> salah
+1) Resource pakai kata benda (NOUN), bukan kata kerja di URL
+   - Salah: /get-products/
+   - Benar: /products  (+ method GET)
 
-HTTP Method Properly; 
-2xx -> succes message
-200 -> standard berhasil
-201 -> post method
+2) HTTP method & status code (pakai sesuai arti)
+   - 2xx sukses
+     - 200 — berhasil standar
+     - 201 — resource baru dibuat (biasanya setelah POST)
+   - 4xx — kesalahan dari client
+     - 401 — unauthorized (belum/tidak sah login atau token), ex: akses /revenues tanpa hak
+     - 403 — forbidden (sudah dikenali tapi tidak boleh)
+     - 404 — not found, ex: GET /products/6 padahal hanya ada 5
+   - 5xx — error server
+     - 500 — generic; jangan expose detail sensitif ke user
+   - Catatan: status utama lewat HTTP status line; hindari “status sukses/gagal” redundan di body sebagai sumber kebenaran.
 
-4xx -> kesalahan dari client
-401 -> unauthorized, ex:/revenues, meskipun user tau tapi gak punya akses
-403 -> forbidden
-404 -> not found, ex:/products/6, padahal hanya ada 5
+3) Versioning API
+   - Contoh breaking change: field amount → totalAmount di /payments
+   - Solusi: /v1/... vs /v2/... supaya client lama tidak putus.
 
-5xx -> error server
-500 -> generic error, gak boleh dikasi tau user
-nb; jangan taruh status dalam body
+4) Filtering, sorting, pagination (query string)
+   - Contoh: /v2/products?minP=100000&maxP=1000000
+   - Memudahkan client tanpa menambah endpoint baru untuk tiap variasi.
 
-Versioning;
-/v1/payments
-    - productId
-    - userId
-    - amount
-/v1/payments
-    - productId
-    - userId
-    - totalAmount -> nanti terjadi break, maka harus pakai versioning
+5) Response format — konsisten antar endpoint
+   - Opsi A — array langsung:
+     GET /v1/products → []
+     GET /v1/users    → []
+   - Opsi B — dibungkus (mudah ditambah meta nanti):
+     GET /v1/products → { 
+              "data": [] 
+            }
+     GET /v1/users → { 
+              "data": [] 
+            }
+   - Salah — campur format (frontend harus parsing beda-beda):
+     /v1/products → { ... }  vs  /v1/users → []
 
-/v2/payments
-    - productId
-    - userId
-    - totalAmount
+6) Nested URL — pakai secukupnya (debatable)
+   - Terlalu dalam bisa membingungkan:
+     /v1/products/:id/reviews/:id/authors
+   - Lebih datar sering lebih jelas:
+     GET /v1/products/:id
+     GET /v1/reviews?productId=<id>
+     GET /v1/authors?reviewId=<id>
 
-Use filtering, sorting, pagination;
-/v2/products?maxP=1000000&minP=100000 -> memudahkan user
+7) Aksi bisnis (action) — biasanya POST + path “verb”
+   - Update umum resource:
+     PATCH /v1/orders/:id
+   - Aksi eksplisit (jelas ke frontend / dokumentasi):
+     POST /v1/orders/:id/cancel
+     POST /v1/orders/:id/proceed
 
-Be Consistent
-contoh benar;
-/v1/products
-/v1/users
 
-/v1/products []
-/v1/users []
+[DAY 6] 
 
-/v1/products {
-    data:[]
-}
-/v1/products {
-    data:[]
-}
+1) Pola placeholder route (biasakan sebelum logika penuh)
+    .get("/", (c) => {
+      return c.json([]);
+    })
+    .get("/:id", (c) => {
+      return c.json({});
+    })
+    .post("/", (c) => {
+      return c.json({ message: "" }, 201);
+    })
+    .patch("/:id", (c) => {
+      return c.json({});
+    })
+    .delete("/:id", (c) => {
+      return c.json({ message: "" });
+    });
 
-contoh salah;
-/v1/products {
-    []
-}
-/v1/users []
+2) Request: headers vs body
+   - GET — umumnya hanya headers + query; tidak ada body.
+   - POST, PUT, PATCH, DELETE — bisa pakai headers dan body.
+   - Headers — metadata (auth token, content-type, dll.)
+   - Body — payload data yang diproses server.
 
-Use nested wisely (debatable);
-/v1/products/:id/reviews/:id/authors -> kadang membingungkan
+3) Jenis database (gambaran besar)
+   - SQL — ada schema, tabular, ex: PostgreSQL
+   - NoSQL — fleksibel skema, ex: MongoDB
 
-yg lebih sehat;
-/v1/products/:id
-/v1/reviews?productId=<id>
-/v1/authors?reviewId=<id>
+4) ORM
+   - Semacam abstraksi yg memudahkan engineer untuk menulis bahasa query dengan bahasa yg udh familiar.
+   - Abstraksi: query dengan API bahasa host (TypeScript), bukan raw SQL everywhere.
+   - Contoh: SQL SELECT * FROM users ↔ ORM prisma.user.findMany()
 
-PATCH /v1/orders/:id
-POST /v1/orders/:id/cancel -> memberi tahu tim frontend bahwa ada action yang bisa diakses
-POST /v1/orders/:id/proceed 
 
-[DAY 6]
+Routing (Hono) — src/index.ts
+  - app.route("/products", productRouter)
+  - app.route("/reviews", reviewRouter)
+  - app.route("/todos", todoRouter)
+  - Catatan: belum pakai prefix /v1; prinsip Day 5 bisa diterapkan nanti tanpa ubah pola Hono.
 
-biasakan buat placeholder sebelum bikin berbagai logika
-  .get("/", (c) => {
-    return c.json([]);
-  })
-  .get("/:id", (c) => {
-    return c.json({});
-  })
-  .post("/", (c) => {
-    return c.json({ message: "" }, 201);
-  })
-  .patch("/:id", (c) => {
-    return c.json({});
-  })
-  .delete("/:id", (c) => {
-    return c.json({ message: "" });
-  });
+Contoh sudah diimplementasi
+  - todos (src/modules/todos/router.ts):
+    - CRUD + Prisma + Zod (CreateTodoSchema, UpdateTodoSchema)
+    - POST /todos/:id/mark-as-done — contoh “action” (POST + verb di path)
+    - 404 untuk todo tidak ada
+    - 201 untuk create
+  - products (src/modules/products/router.ts):
+    - contoh header token → 401 jika kosong
+  - reviews — placeholder CRUD
 
-HTTP request ada 2 bagian;
-Headers n Body, 
-GET hanya headers, post put patch delete bisa nerima keduanya
-
-Headers -> metadata bout request, informasi dll., ex: token untuk proteksi
-Body -> pilot, data yang akan diproses dikirim ke server
-
-Common Type of Database
-SQL -> ada schema-nya, tabular, ex: postgresql
-NoSQL -> gaada schema-nya, ex: mongo
-
-ORM - Object 
-semacam abstraksi yg memudahkan engineer untuk menulis bahasa query dengan bahasa yg udh familiar.
-SQL -> SELECT*FROM Users
-ORM -> db.users.getAll()
+Prisma — prisma/schema.prisma + src/utils/prisma.ts
+  - SQLite + adapter better-sqlite3
+  - Model Todo: id, content, isDone (@default(false))
+  - Client di-generate ke src/generated/prisma
